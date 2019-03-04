@@ -2067,4 +2067,21 @@ KEYUTIL.getJWKFromKey = function(keyObj) {
     throw "not supported key object";
 };
 
+/**
+ * Additions to KEYUTIL by Kronuz: Add getRSAKeyFromData
+ */
 
+KEYUTIL.getRSAKeyFromData = function(key_data) {
+    if (!key_data) return;
+    var key = new RSAKey();
+    key.n = new BigInteger(key_data.n);
+    key.e = key_data.e;
+    key.d = new BigInteger(key_data.d);
+    key.p = new BigInteger(key_data.p);
+    key.q = new BigInteger(key_data.q);
+    key.dmp1 = new BigInteger(key_data.dmp1);
+    key.dmq1 = new BigInteger(key_data.dmq1);
+    key.coeff = new BigInteger(key_data.coeff);
+    key.isPrivate = key_data.isPrivate;
+    return key;
+};
