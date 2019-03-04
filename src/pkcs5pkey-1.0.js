@@ -666,12 +666,20 @@ var PKCS5PKEY = function() {
          * % openssl pkcs8 -in plain_p5.pem -topk8 -v2 -des3 -out encrypted_p8.pem
          */
         getPBKDF2KeyHexFromParam: function(info, passcode) {
+            var pbkdf2KeyHex;
+
+            // Try using much faster asmcrypto.js version.
+            try {
+                pbkdf2KeyHex = bytes_to_hex(Pbkdf2HmacSha1(passcode, hex_to_bytes(info.pbkdf2Salt), info.pbkdf2Iter, 192/32*4));
+                return pbkdf2KeyHex;
+            } catch(ex) {}
+            // fallback to CryptoJS.
             var pbkdf2SaltWS = CryptoJS.enc.Hex.parse(info.pbkdf2Salt);
             var pbkdf2Iter = info.pbkdf2Iter;
             var pbkdf2KeyWS = CryptoJS.PBKDF2(passcode, 
                                               pbkdf2SaltWS, 
                                               { keySize: 192/32, iterations: pbkdf2Iter });
-            var pbkdf2KeyHex = CryptoJS.enc.Hex.stringify(pbkdf2KeyWS);
+            pbkdf2KeyHex = CryptoJS.enc.Hex.stringify(pbkdf2KeyWS);
             return pbkdf2KeyHex;
         },
 
