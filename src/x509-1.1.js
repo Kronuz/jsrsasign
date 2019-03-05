@@ -1256,3 +1256,87 @@ X509.KEYUSAGE_NAME = [
     "encipherOnly",
     "decipherOnly"
 ];
+
+
+/**
+ * Additions to X509 by Kronuz: Add hex2dno
+ */
+
+X509.Z2date = function(z) {
+    var i = 0,
+        date = z.replace(/([0-9]{2})/g, function() {
+            i++;
+            if (i == 1) {
+                return (parseInt(arguments[1], 10) + 2000) + '-';
+            }
+            if (i < 3) {
+                return arguments[1] + '-';
+            }
+            if (i == 3) {
+                return arguments[1] + 'T';
+            }
+            if (i < 6) {
+                return arguments[1] + ':';
+            }
+            return arguments[1];
+        });
+    if (i == 6) {
+        return new Date(date);
+    }
+};
+
+X509.hex2string = function(h) {
+    return h.replace(/([0-9A-Fa-f]{2})/g, function() {
+        return String.fromCharCode(parseInt(arguments[1], 16));
+    });
+};
+
+X509.hex2dno = function(hDN) {
+    var o = {};
+    var a = ASN1HEX.getChildIdx(hDN, 0);
+    for (var i = 0; i < a.length; i++) {
+        var hRDN = ASN1HEX.getTLV(hDN, a[i]);
+        var tv = X509.hex2rdno(hRDN);
+        o[tv[0]] = tv[1];
+    }
+    return o;
+};
+
+X509.hex2rdno = function(hRDN) {
+    var hType = ASN1HEX.getTLVbyList(hRDN, 0, [0, 0]);
+    var hValueType = ASN1HEX.getTLVbyList(hRDN, 0, [0, 1]).substring(0, 2);
+    var hValue = ASN1HEX.getVbyList(hRDN, 0, [0, 1]);
+    var type = "";
+    var value = "";
+    try {
+        type = X509.DN_ATTRHEX[hType] || hType;
+    } catch (ex) {
+        type = hType;
+    }
+    if (hValueType === '0c') {
+        // UTF8
+        hValue = hValue.replace(/(..)/g, "%$1");
+        value = decodeURIComponent(hValue);
+    } else {
+        for (var i = 0; i < hValue.length; i += 2) {
+            value += String.fromCharCode(parseInt(hValue.substr(i, 2), 16));
+        }
+    }
+    return [type, value];
+};
+
+X509.DN_ATTRHEX = {
+    "0603550406": "countryName", // C
+    "060355040a": "organizationName",  // O
+    "060355040b": "organizationalUnitName",  // OU
+    "0603550403": "commonName",  // CN
+    "0603550405": "serialNumber",  // SN
+    "0603550408": "stateOrProvinceName",  // ST
+    "0603550407": "localityName",  // L
+    "0603550429": "name",
+    "0603550411": "postalCode",
+    "0603550409": "streetAddress",
+    "060355042d": "uniqueIdentifier",
+    "06092a864886f70d010901": "emailAddress",
+    "06092a864886f70d010902": "unstructuredName"
+};
