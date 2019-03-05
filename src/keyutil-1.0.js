@@ -449,9 +449,12 @@ var KEYUTIL = function() {
             var a0_0_1_1 = _getChildIdx(sHEX, a0_0_1[1]); 
             if (a0_0_1_1.length != 2)
                 throw "malformed format: SEQUENCE(0.0.1.1).items != 2: " + a0_0_1_1.length;
-            if (_getV(sHEX, a0_0_1_1[0]) != "2a864886f70d0307")
-                throw "this only supports TripleDES";
-            info.encryptionSchemeAlg = "TripleDES";
+            if (_getV(sHEX, a0_0_1_1[0]) == "2a864886f70d0307")
+                info.encryptionSchemeAlg = "TripleDES";
+            else if (_getV(sHEX, a0_0_1_1[0]) == "2b0e030207")
+                info.encryptionSchemeAlg = "DES";
+            else
+                throw "this only supports DES and TripleDES";
 
             // 2.2.1.1 IV of encryptionScheme
             info.encryptionSchemeIV = _getV(sHEX, a0_0_1_1[1]);
@@ -545,11 +548,15 @@ var KEYUTIL = function() {
             // 3. hKey - PBKDF2 key
             var pbkdf2KeyHex = KEYUTIL.getPBKDF2KeyHexFromParam(info, passcode);
             // 4. decrypt ciphertext by PBKDF2 key
-            var encrypted = {};
+            var decrypt, encrypted = {};
             encrypted.ciphertext = CryptoJS.enc.Hex.parse(info.ciphertext);
             var pbkdf2KeyWS = CryptoJS.enc.Hex.parse(pbkdf2KeyHex);
-            var des3IVWS = CryptoJS.enc.Hex.parse(info.encryptionSchemeIV);
-            var decWS = CryptoJS.TripleDES.decrypt(encrypted, pbkdf2KeyWS, { iv: des3IVWS });
+            var IVWS = CryptoJS.enc.Hex.parse(info.encryptionSchemeIV);
+            if (info.encryptionSchemeAlg === "TripleDES")
+                decrypt = CryptoJS.TripleDES.decrypt;
+            else if (info.encryptionSchemeAlg === "DES")
+                decrypt = CryptoJS.DES.decrypt;
+            var decWS = decrypt(encrypted, pbkdf2KeyWS, { iv: IVWS });
             var decHex = CryptoJS.enc.Hex.stringify(decWS);
             return decHex;
         },
