@@ -466,6 +466,7 @@ function X509() {
      */
     this.getExtInfo = function(oidOrName) {
 	var a = this.aExtInfo;
+    if (!a) return undefined;
 	var oid = oidOrName;
 	if (! oidOrName.match(/^[0-9.]+$/)) {
 	    oid = KJUR.asn1.x509.OID.name2oid(oidOrName);
