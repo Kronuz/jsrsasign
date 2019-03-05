@@ -69,7 +69,7 @@ KJUR.crypto.Util = new function() {
      */
     this.DEFAULTPROVIDER = {
 	'md5':			'cryptojs',
-	'sha1':			'cryptojs',
+	'sha1':			'asmcrypto',
 	'sha224':		'cryptojs',
 	'sha256':		'cryptojs',
 	'sha384':		'cryptojs',
@@ -484,6 +484,30 @@ KJUR.crypto.MessageDigest = function(params) {
 	alg = KJUR.crypto.MessageDigest.getCanonicalAlgName(alg);
 
 	if (alg !== null && prov === undefined) prov = KJUR.crypto.Util.DEFAULTPROVIDER[alg];
+
+    if (alg == 'sha1' && prov == 'asmcrypto') {
+        this.md = new Sha1();
+        this.md.reset();
+        this.updateString = function(str) {
+            this.md.process(string_to_bytes(str));
+        };
+        this.updateHex = function(hex) {
+            this.md.process(hex_to_bytes(hex));
+        };
+        this.digest = function() {
+            this.md.finish();
+            return bytes_to_hex(this.md.result);
+        };
+        this.digestString = function(str) {
+            this.updateString(str);
+            return this.digest();
+        };
+        this.digestHex = function(hex) {
+            this.updateHex(hex);
+            return this.digest();
+        };
+        return;
+    }
 
 	// for cryptojs
 	if (':md5:sha1:sha224:sha256:sha384:sha512:ripemd160:'.indexOf(alg) != -1 &&
